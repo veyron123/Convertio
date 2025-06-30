@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertio</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="https://i.imgur.com/QIIsB6k.png" alt="Convertio Logo">
+            <span>Convertio</span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#">Конвертировать</a></li>
+                <li><a href="#">Инструменты</a></li>
+                <li><a href="#">Прайсинг</a></li>
+                <li><a href="#">Войти</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section class="converter-types">
+            <ul>
+                <li><a href="#" data-type="audio">Audio Converter</a></li>
+                <li><a href="#" data-type="video">Video Converter</a></li>
+                <li><a href="#" data-type="image">Image Converter</a></li>
+                <li><a href="#" data-type="document">Document Converter</a></li>
+                <li><a href="#" data-type="archive">Archive Converter</a></li>
+                <li><a href="#" data-type="presentation">Presentation Converter</a></li>
+                <li><a href="#" data-type="font">Font Converter</a></li>
+                <li><a href="#" data-type="ebook">E-book Converter</a></li>
+            </ul>
+        </section>
+        <section class="converter">
+            <h1>Онлайн Конвертер Файлов</h1>
+            <p>Конвертируйте ваши файлы в любой формат</p>
+            <input type="file" id="file-input" style="display: none;" />
+            <button class="choose-file-btn" id="choose-file-btn">Выбрать Файл</button>
+            <div class="conversion-controls">
+                <label for="output-format">Конвертировать в:</label>
+                <select id="output-format">
+                <option value="svg">SVG</option>
+                <option value="ico">ICO</option>
+                <option value="jpg">JPG</option>
+                <option value="webp">WEBP</option>
+                <option value="jpeg">JPEG</option>
+                <option value="dds">DDS</option>
+                <option value="gif">GIF</option>
+                <option value="cur">CUR</option>
+                <option value="bmp">BMP</option>
+                <option value="hdr">HDR</option>
+                <option value="psd">PSD</option>
+                <option value="tiff">TIFF</option>
+                <option value="tga">TGA</option>
+                <option value="avif">AVIF</option>
+                <option value="rgb">RGB</option>
+                </select>
+            </div>
+            <div id="status-container"></div>
+        </section>
+        <section class="features">
+            <div class="feature">
+                <img src="https://i.imgur.com/O3s5t3Z.png" alt="Fast and Easy">
+                <h3>Быстро и легко</h3>
+                <p>Просто перетащите файлы на страницу, выберите выходной формат и нажмите кнопку "Конвертировать".</p>
+            </div>
+            <div class="feature">
+                <img src="https://i.imgur.com/O3s5t3Z.png" alt="In the Cloud">
+                <h3>В облаке</h3>
+                <p>Конвертация происходит в облаке и не использует ресурсы вашего компьютера.</p>
+            </div>
+            <div class="feature">
+                <img src="https://i.imgur.com/O3s5t3Z.png" alt="Security Guaranteed">
+                <h3>Гарантия безопасности</h3>
+                <p>Мы удаляем загруженные файлы сразу, а конвертированные - через 24 часа. Никто не имеет доступа к вашим файлам.</p>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <div class="footer-container">
+            <div class="file-counter">
+                <p>Файлов конвертировано: <span id="file-count">12 345 678</span></p>
+            </div>
+            <div class="footer-links">
+                <div class="footer-column">
+                    <h4>About</h4>
+                    <ul>
+                        <li><a href="#">About us</a></li>
+                        <li><a href="#">Contact us</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Video Converter</h4>
+                    <ul>
+                        <li><a href="#">MP4 Converter</a></li>
+                        <li><a href="#">AVI Converter</a></li>
+                        <li><a href="#">MOV Converter</a></li>
+                        <li><a href="#">MKV Converter</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Developers API</h4>
+                    <ul>
+                        <li><a href="#">API Documentation</a></li>
+                        <li><a href="#">Pricing</a></li>
+                        <li><a href="#">Examples</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="footer-bottom">
+                <p>&copy; 2014–2024 Convertio. All rights reserved.</p>
+                <div class="language-selector">
+                    <select>
+                        <option>Русский</option>
+                        <option>English</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
