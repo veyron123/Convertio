@@ -2,52 +2,105 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const Busboy = require('busboy');
+const os = require('os');
 const path = require('path');
-const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
-const port = process.env.PORT || 8081;
+const port = process.env.PORT || 3000;
+const convertioKey = process.env.CONVERTIO_KEY;
 
-// Serve static files from the root directory
-app.use(express.static(path.join(__dirname)));
+app.use(cors({ origin: true }));
+app.use(express.static('public'));
 
-app.use(cors());
-app.use(express.json());
+app.post('/api/start-conversion', (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
+  }
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+  const busboy = Busboy({ headers: req.headers });
+  const tmpdir = os.tmpdir();
+  const fields = {};
+  const fileWrites = [];
 
-app.post('/api/start-conversion', upload.single('file'), async (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: 'File is required' });
-    }
+  busboy.on('field', (fieldname, val) => {
+    fields[fieldname] = val;
+  });
 
-    try {
+  busboy.on('file', (fieldname, file, { filename }) => {
+    const filepath = path.join(tmpdir, filename);
+    const writeStream = fs.createWriteStream(filepath);
+    file.pipe(writeStream);
+
+    const promise = new Promise((resolve, reject) => {
+      file.on('end', () => {
+        writeStream.end();
+      });
+      writeStream.on('finish', () => {
+        resolve({ filepath, filename });
+      });
+      writeStream.on('error', reject);
+    });
+    fileWrites.push(promise);
+  });
+
+  const conversionPromise = new Promise((resolve, reject) => {
+    busboy.on('finish', async () => {
+      try {
+        const files = await Promise.all(fileWrites);
+        const [uploadedFile] = files;
+
+        if (!uploadedFile) {
+          return reject(new Error('File is required'));
+        }
+
+        const fileBuffer = fs.readFileSync(uploadedFile.filepath);
+        fs.unlinkSync(uploadedFile.filepath);
+
         const response = await axios.post('https://api.convertio.co/convert', {
-            apikey: process.env.API_KEY,
-            input: 'base64',
-            file: req.file.buffer.toString('base64'),
-            filename: req.file.originalname,
-            outputformat: req.body.outputformat,
+          apikey: convertioKey,
+          input: 'base64',
+          file: fileBuffer.toString('base64'),
+          filename: uploadedFile.filename,
+          outputformat: fields.outputformat,
         });
-        res.json({ id: response.data.data.id });
-    } catch (error) {
-        console.error('Error starting conversion:', error.response ? error.response.data : error.message);
-        res.status(500).json({ error: 'Failed to start conversion' });
-    }
+
+        resolve(response.data.data);
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    busboy.on('error', (err) => reject(err));
+  });
+
+  req.pipe(busboy);
+
+  conversionPromise
+    .then((data) => res.json({ id: data.id }))
+    .catch((error) => {
+      console.error('Error during conversion process:', error.message);
+      res.status(500).json({ error: 'Failed to process file upload.' });
+    });
 });
 
 app.get('/api/conversion-status/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const response = await axios.get(`https://api.convertio.co/convert/${id}/status`);
-        res.json(response.data.data);
-    } catch (error) {
-        console.error('Error fetching conversion status:', error.response ? error.response.data : error.message);
-        res.status(500).json({ error: 'Failed to fetch conversion status' });
-    }
+  try {
+    const { id } = req.params;
+    const response = await axios.get(`https://api.convertio.co/convert/${id}/status`);
+    res.json(response.data.data);
+  } catch (error) {
+    console.error('Error fetching conversion status:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Failed to fetch conversion status' });
+  }
+});
+
+// Обработчик для всех остальных GET-запросов, возвращает index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });

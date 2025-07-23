@@ -1,0 +1,363 @@
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    background-color: #f0f2f5;
+    color: #333;
+    line-height: 1.6;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 2rem;
+    background-color: #fff;
+    border-bottom: 1px solid #ddd;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.logo img {
+    height: 40px;
+    margin-right: 10px;
+}
+
+nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+
+nav li {
+    margin-left: 2rem;
+}
+
+nav a {
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+}
+
+nav a:hover {
+    color: #e53e3e;
+}
+
+main {
+    text-align: center;
+}
+
+.converter {
+    padding: 4rem 2rem;
+    background-color: #e53e3e;
+    color: #fff;
+    border-radius: 20px;
+    margin: 2rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.converter h1 {
+    font-size: 2.8rem;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    letter-spacing: -1px;
+    font-weight: 700;
+}
+
+.converter h2 {
+    font-size: 1.2rem;
+    margin-bottom: 2.5rem;
+    font-weight: 400;
+    opacity: 0.9;
+}
+
+.choose-file-btn {
+    background-color: #fff;
+    color: #e53e3e;
+    border: none;
+    padding: 1rem 2.5rem;
+    font-size: 1.25rem;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 300px; /* Set a min-width */
+    justify-content: center; /* Center content */
+}
+
+.choose-file-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.choose-file-btn i {
+    font-size: 1.2rem;
+}
+
+.disclaimer {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.disclaimer a {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.supported-formats {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+.features {
+    display: flex;
+    justify-content: space-around;
+    padding: 4rem 2rem;
+    background-color: #fff;
+}
+
+.feature {
+    max-width: 300px;
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    color: #e53e3e;
+    margin-bottom: 1rem;
+}
+
+.feature h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.feature p {
+    color: #666;
+}
+
+.converter-types {
+    padding: 3rem 2rem;
+    background-color: #fff;
+}
+
+.converter-types ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.converter-types a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 2rem 1rem;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.converter-types a:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    background-color: #fff;
+    border-color: #e53e3e;
+}
+
+.converter-types a i {
+    font-size: 2rem;
+    color: #e53e3e;
+}
+
+footer {
+    background-color: #333;
+    color: #ccc;
+    padding: 3rem 2rem;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.file-counter {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.2rem;
+}
+
+#file-count {
+    font-weight: bold;
+    color: #fff;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.footer-column {
+    flex: 1;
+    min-width: 200px;
+    margin: 1rem;
+}
+
+.footer-column h4 {
+    color: #fff;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+}
+
+.footer-column ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-column li {
+    margin-bottom: 0.5rem;
+}
+
+.footer-column a {
+    color: #ccc;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.footer-column a:hover {
+    color: #fff;
+}
+
+footer hr {
+    border: 0;
+    border-top: 1px solid #555;
+    margin: 2rem 0;
+}
+
+.footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.supported-formats-section {
+    padding: 4rem 2rem;
+    background-color: #fff;
+    text-align: center;
+}
+
+.supported-formats-section h2 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+}
+
+.formats-table {
+    max-width: 900px;
+    margin: 0 auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.formats-table-header {
+    display: flex;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    font-weight: bold;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.formats-table-body .formats-table-row {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.formats-table-body .formats-table-row:last-child {
+    border-bottom: none;
+}
+
+.format-col, .description-col, .conversions-col {
+    display: flex;
+    align-items: center;
+}
+
+.format-col {
+    flex: 1.5;
+    font-weight: 500;
+}
+
+.description-col {
+    flex: 4;
+    color: #666;
+}
+
+.conversions-col {
+    flex: 2;
+    justify-content: flex-end;
+}
+
+.conversions-col a {
+    text-decoration: none;
+    color: #e53e3e;
+    font-weight: 500;
+}
+
+.conversions-col a:hover {
+    text-decoration: underline;
+}
+
+.format-play-icon {
+    color: #007bff;
+    margin-right: 15px;
+    font-size: 1.2rem;
+}
+
+.language-selector select {
+    background-color: #444;
+    color: #ccc;
+    border: 1px solid #555;
+    padding: 0.5rem;
+    border-radius: 5px;
+}
+/* Mobile Adaptation */
+@media (max-width: 768px) {
+    .converter h1 {
+        font-size: 2.2rem;
+    }
+    .features {
+        flex-direction: column;
+        gap: 2rem;
+    }
+    .footer-links {
+        flex-direction: column;
+        text-align: center;
+    }
+}
