@@ -4,7 +4,7 @@
   "description": "Backend server for Convertio API",
   "main": "server.js",
   "scripts": {
-    "start": "nodemon server.js",
+    "start": "node server.js",
     "serve:public": "npx serve -s public -l 3001"
   },
   "dependencies": {
