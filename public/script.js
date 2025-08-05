@@ -78,7 +78,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!startResponse.ok) {
         const errorData = await startResponse.json();
-        throw new Error(errorData.error || "Не удалось начать конвертацию");
+        let errorMessage = errorData.error || "Не удалось начать конвертацию";
+        
+        // Более понятные сообщения об ошибках
+        if (startResponse.status === 413) {
+          errorMessage = "Файл слишком большой. Максимальный размер: 100MB";
+        } else if (startResponse.status === 422) {
+          errorMessage = "Неподдерживаемый формат файла или конвертации";
+        } else if (startResponse.status === 402) {
+          errorMessage = "Недостаточно минут для конвертации на вашем аккаунте";
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const startData = await startResponse.json();

@@ -55,8 +55,23 @@ app.post('/api/start-conversion', (req, res) => {
           return reject(new Error('File is required'));
         }
 
-        const fileBuffer = fs.readFileSync(uploadedFile.filepath);
-        fs.unlinkSync(uploadedFile.filepath);
+        let fileBuffer;
+        try {
+          const fileStats = fs.statSync(uploadedFile.filepath);
+          const fileSizeInMB = fileStats.size / (1024 * 1024);
+          
+          // Проверяем размер файла (максимум 100MB для бесплатного аккаунта)
+          if (fileSizeInMB > 100) {
+            throw new Error('File size exceeds 100MB limit');
+          }
+          
+          fileBuffer = fs.readFileSync(uploadedFile.filepath);
+        } finally {
+          // Всегда удаляем временный файл
+          if (fs.existsSync(uploadedFile.filepath)) {
+            fs.unlinkSync(uploadedFile.filepath);
+          }
+        }
 
         const response = await axios.post('https://api.convertio.co/convert', {
           apikey: convertioKey,
@@ -65,6 +80,11 @@ app.post('/api/start-conversion', (req, res) => {
           filename: uploadedFile.filename,
           outputformat: fields.outputformat,
         });
+
+        // Проверяем статус ответа от Convertio API
+        if (response.data.status !== 'ok') {
+          throw new Error(response.data.error || 'Convertio API returned an error');
+        }
 
         resolve(response.data.data);
       } catch (error) {
@@ -89,6 +109,12 @@ app.get('/api/conversion-status/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const response = await axios.get(`https://api.convertio.co/convert/${id}/status`);
+    
+    // Проверяем статус ответа от Convertio API
+    if (response.data.status !== 'ok') {
+      return res.status(400).json({ error: response.data.error || 'Convertio API returned an error' });
+    }
+    
     res.json(response.data.data);
   } catch (error) {
     console.error('Error fetching conversion status:', error.response ? error.response.data : error.message);
