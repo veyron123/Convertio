@@ -2,137 +2,167 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convertio - Онлайн Конвертер Файлов: Аудио, Видео, Изображения</title>
-    <meta name="description" content="Онлайн конвертер файлов Convertio. Быстро и легко конвертируйте аудио, видео, изображения, документы и другие файлы в любой формат.">
-    <meta name="keywords" content="конвертер файлов, онлайн конвертер, конвертировать аудио, конвертировать видео, конвертировать изображение, file converter, online converter">
-    <meta name="author" content="Convertio">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Convertio - Онлайн Конвертер Файлов</title>
+    <meta name="description" content="Современный онлайн конвертер файлов. Быстро и легко конвертируйте аудио, видео, изображения, документы в любой формат.">
     <link rel="icon" href="/logo.png?v=2" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <div class="logo">
-            <img src="/logo.png?v=2" alt="Convertio Logo">
+    <!-- Header с навигацией -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="/logo.png?v=2" alt="Convertio Logo">
+                <span>Convertio</span>
+            </div>
+            <nav class="nav">
+                <a href="#" class="nav-link">Конвертировать</a>
+                <a href="#" class="nav-link">Инструменты</a>
+                <a href="#" class="nav-link">API</a>
+                <a href="#" class="nav-link login-btn">Войти</a>
+            </nav>
         </div>
-        <nav>
-            <ul>
-                <li><a href="#">Конвертировать</a></li>
-                <li><a href="#">Инструменты</a></li>
-                <li><a href="#">Прайсинг</a></li>
-                <li><a href="#">Войти</a></li>
-            </ul>
-        </nav>
     </header>
-    <main>
-        <section class="converter-types">
-            <ul>
-                <li><a href="/audio-converter" data-type="audio"><i class="fas fa-music"></i> Audio Converter</a></li>
-                <li><a href="/video-converter" data-type="video"><i class="fas fa-video"></i> Video Converter</a></li>
-                <li><a href="/image-converter" data-type="image"><i class="fas fa-image"></i> Image Converter</a></li>
-                <li><a href="/document-converter" data-type="document"><i class="fas fa-file-alt"></i> Document Converter</a></li>
-                <li><a href="/archive-converter" data-type="archive"><i class="fas fa-file-archive"></i> Archive Converter</a></li>
-                <li><a href="/presentation-converter" data-type="presentation"><i class="fas fa-file-powerpoint"></i> Presentation Converter</a></li>
-                <li><a href="/font-converter" data-type="font"><i class="fas fa-font"></i> Font Converter</a></li>
-                <li><a href="/ebook-converter" data-type="ebook"><i class="fas fa-book"></i> E-book Converter</a></li>
-            </ul>
-        </section>
-        <section class="converter">
-            <h2>Конвертер Файлов</h2>
-            <h3>Конвертируйте ваши файлы в любой формат</h3>
-            <input type="file" id="file-input" style="display: none;" />
-            <button class="choose-file-btn" id="choose-file-btn"><i class="fas fa-upload"></i> Выбрать Файл</button>
-            <div class="disclaimer">
-                100 MB maximum file size or <a href="#">Sign Up</a>
+
+    <!-- Главная секция конвертера -->
+    <main class="main-converter">
+        <div class="converter-container">
+            <!-- Заголовок -->
+            <div class="hero-section">
+                <h1 class="main-title">Конвертер Файлов</h1>
+                <p class="main-subtitle">Конвертируйте ваши файлы в любой формат</p>
             </div>
-            <div class="conversion-controls">
-                <label for="output-format">Конвертировать в:</label>
-                <select id="output-format">
-                    <!-- Форматы будут добавлены динамически через JavaScript -->
-                </select>
-            </div>
-            <div id="status-container"></div>
-        </section>
-        <section class="features">
-            <div class="feature">
-                <i class="fas fa-rocket feature-icon"></i>
-                <h3>Быстро и легко</h3>
-                <p>Просто перетащите файлы на страницу, выберите выходной формат и нажмите кнопку "Конвертировать".</p>
-            </div>
-            <div class="feature">
-                <i class="fas fa-cloud feature-icon"></i>
-                <h3>В облаке</h3>
-                <p>Конвертация происходит в облаке и не использует ресурсы вашего компьютера.</p>
-            </div>
-            <div class="feature">
-                <i class="fas fa-shield-alt feature-icon"></i>
-                <h3>Гарантия безопасности</h3>
-                <p>Мы удаляем загруженные файлы сразу, а конвертированные - через 24 часа. Никто не имеет доступа к вашим файлам. <a href="#">Узнать больше</a></p>
-            </div>
-        </section>
-        <section class="supported-formats-section" style="display: none;">
-            <h2>Supported Formats</h2>
-            <div class="formats-table">
-                <div class="formats-table-header">
-                    <div class="format-col">Format</div>
-                    <div class="description-col">Description</div>
-                    <div class="conversions-col">Conversions</div>
+
+            <!-- Навигация по типам конвертеров -->
+            <div class="converter-types">
+                <div class="converter-type" data-type="audio">
+                    <i class="fas fa-music"></i>
+                    <span>Аудио</span>
                 </div>
-                <div class="formats-table-body">
-                    <!-- Rows will be inserted by JavaScript -->
+                <div class="converter-type" data-type="video">
+                    <i class="fas fa-video"></i>
+                    <span>Видео</span>
+                </div>
+                <div class="converter-type" data-type="image">
+                    <i class="fas fa-image"></i>
+                    <span>Изображения</span>
+                </div>
+                <div class="converter-type" data-type="document">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Документы</span>
+                </div>
+                <div class="converter-type" data-type="archive">
+                    <i class="fas fa-file-archive"></i>
+                    <span>Архивы</span>
+                </div>
+                <div class="converter-type" data-type="presentation">
+                    <i class="fas fa-file-powerpoint"></i>
+                    <span>Презентации</span>
+                </div>
+                <div class="converter-type" data-type="font">
+                    <i class="fas fa-font"></i>
+                    <span>Шрифты</span>
+                </div>
+                <div class="converter-type" data-type="ebook">
+                    <i class="fas fa-book"></i>
+                    <span>Книги</span>
                 </div>
             </div>
-        </section>
+
+            <!-- Секция конвертера -->
+            <div class="converter-wrapper">
+                <!-- Выбор файла -->
+                <div class="file-upload-section">
+                    <input type="file" id="file-input" style="display: none;" />
+                    <button class="file-upload-btn" id="choose-file-btn">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Выбрать файл</span>
+                    </button>
+                    <div class="file-size-limit">
+                        100 MB maximum file size or <a href="#" class="signup-link">Sign Up</a>
+                    </div>
+                </div>
+
+                <!-- Информация о выбранном файле -->
+                <div id="file-info" class="file-info-card" style="display: none;">
+                    <div class="file-icon">
+                        <i class="fas fa-file"></i>
+                    </div>
+                    <div class="file-details">
+                        <div class="file-name" id="file-name"></div>
+                        <div class="file-size" id="file-size"></div>
+                    </div>
+                </div>
+
+                <!-- Выбор формата -->
+                <div class="format-selector-section">
+                    <label class="format-label">Конвертировать в:</label>
+                    <div class="format-select-wrapper">
+                        <select id="output-format" class="format-select">
+                            <!-- Форматы добавляются динамически -->
+                        </select>
+                        <i class="fas fa-chevron-down select-icon"></i>
+                    </div>
+                </div>
+
+                <!-- Кнопка конвертации -->
+                <button class="convert-btn" id="convert-button" disabled>
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Конвертировать</span>
+                </button>
+
+                <!-- Прогресс бар конвертации -->
+                <div id="progress-container" class="progress-container" style="display: none;">
+                    <div class="progress-info">
+                        <span id="progress-status">Подготовка...</span>
+                        <span id="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar-wrapper">
+                        <div class="progress-bar">
+                            <div id="progress-fill" class="progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Статус конвертации -->
+                <div id="status-container" class="status-section"></div>
+            </div>
+
+        </div>
     </main>
-    <footer>
-        <div class="footer-container">
-            <div class="file-counter">
-                <p>Файлов конвертировано: <span id="file-count">12 345 678</span></p>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>О нас</h4>
+                <a href="#">О компании</a>
+                <a href="#">Контакты</a>
+                <a href="#">Условия использования</a>
             </div>
-            <div class="footer-links">
-                <div class="footer-column">
-                    <h4>About</h4>
-                    <ul>
-                        <li><a href="#">About us</a></li>
-                        <li><a href="#">Contact us</a></li>
-                        <li><a href="#">Terms of Service</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h4>Video Converter</h4>
-                    <ul>
-                        <li><a href="#">MP4 Converter</a></li>
-                        <li><a href="#">AVI Converter</a></li>
-                        <li><a href="#">MOV Converter</a></li>
-                        <li><a href="#">MKV Converter</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h4>Developers API</h4>
-                    <ul>
-                        <li><a href="#">API Documentation</a></li>
-                        <li><a href="#">Pricing</a></li>
-                        <li><a href="#">Examples</a></li>
-                    </ul>
-                </div>
+            <div class="footer-section">
+                <h4>API</h4>
+                <a href="#">Документация</a>
+                <a href="#">Примеры</a>
+                <a href="#">Тарифы</a>
             </div>
-            <hr>
-            <div class="footer-bottom">
-                <p>&copy; 2014–2024 Convertio. All rights reserved.</p>
-                <div class="language-selector">
-                    <select>
-                        <option>Русский</option>
-                        <option>English</option>
-                    </select>
-                </div>
+            <div class="footer-section">
+                <h4>Поддержка</h4>
+                <a href="#">FAQ</a>
+                <a href="#">Помощь</a>
+                <a href="#">Безопасность</a>
             </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Convertio. Все права защищены.</p>
         </div>
     </footer>
+
     <script src="script.js"></script>
 </body>
 </html>

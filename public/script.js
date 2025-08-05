@@ -151,7 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Client-side Routing ---
   const handleRouteChange = () => {
     const path = window.location.pathname;
-    const converterTitle = document.querySelector('.converter h2');
+    const converterTitle = document.querySelector('.converter-title');
     if (!converterTitle) return;
 
     // Определяем тип конвертера из URL
@@ -182,13 +182,25 @@ document.addEventListener("DOMContentLoaded", () => {
     updateFormatOptions(converterType);
   };
 
-  // Обработка кликов по ссылкам
-  document.querySelectorAll('a[data-type]').forEach(link => {
-    link.addEventListener('click', (e) => {
+  // Обработка кликов по типам конвертеров
+  document.querySelectorAll('.converter-type').forEach(type => {
+    type.addEventListener('click', (e) => {
       e.preventDefault();
-      const href = link.getAttribute('href');
-      history.pushState({}, '', href);
-      handleRouteChange();
+      const converterType = type.dataset.type;
+      
+      // Обновляем визуальное состояние
+      document.querySelectorAll('.converter-type').forEach(t => t.classList.remove('active'));
+      type.classList.add('active');
+      
+      // Обновляем заголовок и форматы
+      const group = formatGroups[converterType];
+      const mainTitle = document.querySelector('.main-title');
+      if (mainTitle && group) {
+        mainTitle.textContent = group.title;
+      }
+      
+      // Обновляем список форматов
+      updateFormatOptions(converterType);
     });
   });
 
@@ -200,18 +212,97 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- End Client-side Routing ---
 
 
-  // Запускаем конвертацию при выборе файла
-  fileInput.addEventListener("change", async (event) => {
+  // Переменная для хранения выбранного файла
+  let selectedFile = null;
+  
+  // Функция обновления прогресс бара
+  function updateProgress(percent, status, state = 'converting') {
+    if (!progressContainer || !progressStatus || !progressPercent || !progressFill) return;
+    
+    progressContainer.style.display = 'block';
+    progressContainer.className = `progress-container ${state}`;
+    progressPercent.textContent = `${percent}%`;
+    progressStatus.textContent = status;
+    progressFill.style.width = `${percent}%`;
+  }
+  
+  // Функция скрытия прогресс бара
+  function hideProgress() {
+    if (progressContainer) {
+      progressContainer.style.display = 'none';
+    }
+  }
+  
+  // Получаем элементы для новой логики
+  const convertButton = document.getElementById("convert-button");
+  const fileInfo = document.getElementById("file-info");
+  const fileName = document.getElementById("file-name");
+  const fileSize = document.getElementById("file-size");
+  
+  // Прогресс бар элементы
+  const progressContainer = document.getElementById("progress-container");
+  const progressStatus = document.getElementById("progress-status");
+  const progressPercent = document.getElementById("progress-percent");
+  const progressFill = document.getElementById("progress-fill");
+
+  // Проверяем, что все элементы существуют
+  if (!convertButton || !fileInfo || !fileName || !progressContainer) {
+    console.error("Некоторые элементы интерфейса не найдены");
+    return;
+  }
+
+  // Обработка выбора файла (БЕЗ автоконвертации)
+  fileInput.addEventListener("change", (event) => {
     const file = event.target.files[0];
     if (!file) {
+      selectedFile = null;
+      fileInfo.style.display = "none";
+      convertButton.disabled = true;
+      statusContainer.innerHTML = "";
+      hideProgress();
+      return;
+    }
+
+    selectedFile = file;
+    
+    // Показываем информацию о файле
+    fileName.textContent = file.name;
+    if (fileSize) {
+      fileSize.textContent = formatFileSize(file.size);
+    }
+    fileInfo.style.display = "block";
+    
+    // Активируем кнопку конвертации
+    convertButton.disabled = false;
+    
+    // Очищаем предыдущие сообщения
+    statusContainer.innerHTML = "";
+    hideProgress();
+  });
+
+  // Обработка нажатия кнопки конвертации
+  convertButton.addEventListener("click", async () => {
+    if (!selectedFile) {
+      statusContainer.innerHTML = "<p>Пожалуйста, выберите файл для конвертации</p>";
       return;
     }
 
     const outputFormat = outputFormatSelect.value;
-    statusContainer.innerHTML = "<p>Загрузка файла...</p>";
+    if (!outputFormat) {
+      statusContainer.innerHTML = "<p>Пожалуйста, выберите формат для конвертации</p>";
+      return;
+    }
+
+    // Отключаем кнопку во время конвертации
+    convertButton.disabled = true;
+    convertButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Конвертация...</span>';
+    
+    // Показываем прогресс бар загрузки
+    updateProgress(10, 'Загрузка файла...', 'uploading');
+    statusContainer.innerHTML = "";
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", selectedFile);
     formData.append("outputformat", outputFormat);
 
     try {
@@ -238,15 +329,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const startData = await startResponse.json();
       const conversionId = startData.id;
-      statusContainer.innerHTML = `<p>Конвертация началась. ID: ${conversionId}</p><p>Проверка статуса...</p>`;
+      
+      // Обновляем прогресс бар
+      updateProgress(25, 'Конвертация началась...', 'converting');
       
       pollConversionStatus(conversionId);
 
     } catch (error) {
       console.error("Ошибка при запуске конвертации:", error);
       statusContainer.innerHTML = `<p>Ошибка: ${error.message}</p>`;
+      
+      // Показываем ошибку в прогресс баре
+      updateProgress(0, 'Ошибка конвертации', 'error');
+      
+      // Возвращаем кнопку в исходное состояние
+      setTimeout(() => {
+        convertButton.disabled = false;
+        convertButton.innerHTML = '<i class="fas fa-sync-alt"></i><span>Конвертировать</span>';
+        hideProgress();
+      }, 3000);
     }
   });
+
+  // Функция для форматирования размера файла
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
 
   async function pollConversionStatus(id) {
     try {
@@ -257,15 +369,48 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await response.json();
 
         if (data.step === "finish") {
-            statusContainer.innerHTML = `<p>Конвертация завершена!</p><a href="${data.output.url}" target="_blank" rel="noopener noreferrer">Скачать результат</a>`;
+            // Показываем завершение
+            updateProgress(100, 'Конвертация завершена!', 'completed');
+            
+            statusContainer.innerHTML = `<a href="${data.output.url}" target="_blank" rel="noopener noreferrer">Скачать результат</a>`;
+            
+            // Восстанавливаем кнопку конвертации через некоторое время
+            setTimeout(() => {
+                convertButton.disabled = false;
+                convertButton.innerHTML = '<i class="fas fa-sync-alt"></i><span>Конвертировать</span>';
+            }, 2000);
         } else {
             const progress = data.step_percent || 0;
-            statusContainer.innerHTML = `<p>Статус: ${data.step} (${progress}%)</p>`;
+            let statusText = data.step;
+            
+            // Переводим статусы на русский
+            const statusTranslations = {
+                'upload': 'Загрузка...',
+                'wait': 'Ожидание...',
+                'convert': 'Конвертация...',
+                'finish': 'Завершение...'
+            };
+            
+            statusText = statusTranslations[data.step] || statusText;
+            
+            // Обновляем прогресс бар
+            updateProgress(progress, statusText, 'converting');
+            
             setTimeout(() => pollConversionStatus(id), 3000); // Проверяем каждые 3 секунды
         }
     } catch (error) {
         console.error("Ошибка при проверке статуса:", error);
         statusContainer.innerHTML = "<p>Ошибка при проверке статуса. Попробуйте еще раз.</p>";
+        
+        // Показываем ошибку в прогресс баре
+        updateProgress(0, 'Ошибка проверки статуса', 'error');
+        
+        // Восстанавливаем кнопку при ошибке
+        setTimeout(() => {
+            convertButton.disabled = false;
+            convertButton.innerHTML = '<i class="fas fa-sync-alt"></i><span>Конвертировать</span>';
+            hideProgress();
+        }, 3000);
     }
   }
 });
