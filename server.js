@@ -124,13 +124,20 @@ app.post('/api/start-conversion', (req, res) => {
           // Для больших файлов используем direct upload
           console.log('Using direct upload for large file...');
           
+          // Добавляем браузерные заголовки
+          const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          };
+          
           // Шаг 1: Создаем задачу конвертации с input: "upload"
           response = await axios.post('https://api.convertio.co/convert', {
             apikey: convertioKey,
             input: 'upload',
             filename: uploadedFile.filename,
             outputformat: fields.outputformat,
-          });
+          }, { headers });
 
           if (response.data.status !== 'ok') {
             throw new Error(response.data.error || 'Failed to create conversion task');
@@ -169,13 +176,19 @@ app.post('/api/start-conversion', (req, res) => {
           
         } else {
           // Для файлов меньше 300MB используем base64
+          const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          };
+          
           response = await axios.post('https://api.convertio.co/convert', {
             apikey: convertioKey,
             input: 'base64',
             file: fileBuffer.toString('base64'),
             filename: uploadedFile.filename,
             outputformat: fields.outputformat,
-          });
+          }, { headers });
 
           if (response.data.status !== 'ok') {
             throw new Error(response.data.error || 'Convertio API returned an error');
@@ -260,7 +273,24 @@ app.get('/api/test-convertio', async (req, res) => {
     return res.status(500).json({ error: 'CONVERTIO_KEY not set' });
   }
 
+  // Получаем внешний IP сервера
+  let serverIP = 'unknown';
   try {
+    const ipResponse = await axios.get('https://api.ipify.org?format=json', { timeout: 3000 });
+    serverIP = ipResponse.data.ip;
+    console.log('🌐 Server external IP:', serverIP);
+  } catch (ipError) {
+    console.log('⚠️ Could not get external IP:', ipError.message);
+  }
+
+  try {
+    // Добавляем User-Agent и другие заголовки как в браузере
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    };
+
     // Тестовый запрос к Convertio API
     const response = await axios.post('https://api.convertio.co/convert', {
       apikey: convertioKey,
@@ -268,12 +298,13 @@ app.get('/api/test-convertio', async (req, res) => {
       file: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==', // Минимальный 1x1 PNG
       filename: 'test.png',
       outputformat: 'jpg',
-    });
+    }, { headers });
 
     console.log('✅ Convertio API test response:', response.data);
     res.json({
       success: true,
       convertio_response: response.data,
+      server_ip: serverIP,
       message: 'Convertio API working!'
     });
   } catch (error) {
@@ -285,6 +316,7 @@ app.get('/api/test-convertio', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message,
+      server_ip: serverIP,
       convertio_error: error.response ? error.response.data : null
     });
   }
