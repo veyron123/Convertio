@@ -8,11 +8,14 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3012;
 const convertioKey = process.env.CONVERTIO_KEY;
 
 app.use(cors({ origin: true }));
 app.use(express.static('public'));
+
+// Middleware для получения реального IP адреса
+app.set('trust proxy', true);
 
 app.post('/api/start-conversion', (req, res) => {
   if (req.method !== 'POST') {
@@ -56,38 +59,120 @@ app.post('/api/start-conversion', (req, res) => {
         }
 
         let fileBuffer;
+        let shouldUseDirectUpload = false; // Объявляем переменную заранее
+        
         try {
           const fileStats = fs.statSync(uploadedFile.filepath);
           const fileSizeInMB = fileStats.size / (1024 * 1024);
           
-          // Проверяем размер файла (максимум 100MB для бесплатного аккаунта)
-          if (fileSizeInMB > 100) {
-            throw new Error('File size exceeds 100MB limit');
+          // Получаем IP адрес клиента
+          const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 
+                          (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+                          req.headers['x-forwarded-for'] || req.headers['x-real-ip'];
+          
+          // Ваш IP адрес (замените на ваш реальный IP)
+          const allowedIP = '127.0.0.1'; // или ваш внешний IP
+          const isLocalhost = clientIP === '::1' || clientIP === '127.0.0.1' || clientIP === '::ffff:127.0.0.1';
+          
+          // Проверяем размер файла для Render Free (максимум 400MB общий лимит)
+          const maxBase64Size = 200; // 200MB максимум для base64 (экономим RAM)
+          const maxDirectUploadSize = 400; // 400MB максимум для Render Free Plan
+          
+          if (fileSizeInMB > maxDirectUploadSize) {
+            throw new Error(`File size exceeds ${maxDirectUploadSize}MB limit`);
           }
           
-          fileBuffer = fs.readFileSync(uploadedFile.filepath);
+          shouldUseDirectUpload = fileSizeInMB > maxBase64Size;
+          
+          // Логируем информацию для отладки
+          console.log(`File upload: ${fileSizeInMB.toFixed(2)}MB from IP: ${clientIP}, isLocalhost: ${isLocalhost}, useDirectUpload: ${shouldUseDirectUpload}`);
+          
+          if (!shouldUseDirectUpload) {
+            // Для файлов меньше 300MB используем base64
+            fileBuffer = fs.readFileSync(uploadedFile.filepath);
+          }
         } finally {
-          // Всегда удаляем временный файл
-          if (fs.existsSync(uploadedFile.filepath)) {
+          // Удаляем временный файл только для base64 загрузки
+          if (!shouldUseDirectUpload && fs.existsSync(uploadedFile.filepath)) {
             fs.unlinkSync(uploadedFile.filepath);
           }
         }
 
-        const response = await axios.post('https://api.convertio.co/convert', {
-          apikey: convertioKey,
-          input: 'base64',
-          file: fileBuffer.toString('base64'),
-          filename: uploadedFile.filename,
-          outputformat: fields.outputformat,
-        });
+        let response;
+        let conversionId;
 
-        // Проверяем статус ответа от Convertio API
-        if (response.data.status !== 'ok') {
-          throw new Error(response.data.error || 'Convertio API returned an error');
+        if (shouldUseDirectUpload) {
+          // Для больших файлов используем direct upload
+          console.log('Using direct upload for large file...');
+          
+          // Шаг 1: Создаем задачу конвертации с input: "upload"
+          response = await axios.post('https://api.convertio.co/convert', {
+            apikey: convertioKey,
+            input: 'upload',
+            filename: uploadedFile.filename,
+            outputformat: fields.outputformat,
+          });
+
+          if (response.data.status !== 'ok') {
+            throw new Error(response.data.error || 'Failed to create conversion task');
+          }
+
+          conversionId = response.data.data.id;
+          
+          // Шаг 2: Загружаем файл через PUT запрос
+          console.log(`Uploading file for conversion ID: ${conversionId}`);
+          
+          const fileStream = fs.createReadStream(uploadedFile.filepath);
+          const uploadResponse = await axios.put(
+            `https://api.convertio.co/convert/${conversionId}/${encodeURIComponent(uploadedFile.filename)}`,
+            fileStream,
+            {
+              headers: {
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': fs.statSync(uploadedFile.filepath).size
+              },
+              maxContentLength: Infinity,
+              maxBodyLength: Infinity,
+              timeout: 1800000 // 30 минут таймаут для больших файлов
+            }
+          );
+
+          // Удаляем временный файл после загрузки
+          if (fs.existsSync(uploadedFile.filepath)) {
+            fs.unlinkSync(uploadedFile.filepath);
+          }
+
+          if (uploadResponse.data.status !== 'ok') {
+            throw new Error(uploadResponse.data.error || 'Failed to upload file');
+          }
+
+          console.log('File uploaded successfully via direct upload');
+          
+        } else {
+          // Для файлов меньше 300MB используем base64
+          response = await axios.post('https://api.convertio.co/convert', {
+            apikey: convertioKey,
+            input: 'base64',
+            file: fileBuffer.toString('base64'),
+            filename: uploadedFile.filename,
+            outputformat: fields.outputformat,
+          });
+
+          if (response.data.status !== 'ok') {
+            throw new Error(response.data.error || 'Convertio API returned an error');
+          }
+
+          conversionId = response.data.data.id;
         }
 
-        resolve(response.data.data);
+        // Возвращаем ID конвертации
+        resolve({ id: conversionId });
       } catch (error) {
+        console.error('Detailed error in conversion process:', {
+          message: error.message,
+          stack: error.stack,
+          response: error.response ? error.response.data : 'No response data'
+        });
         reject(error);
       }
     });
@@ -100,8 +185,22 @@ app.post('/api/start-conversion', (req, res) => {
   conversionPromise
     .then((data) => res.json({ id: data.id }))
     .catch((error) => {
-      console.error('Error during conversion process:', error.message);
-      res.status(500).json({ error: 'Failed to process file upload.' });
+      console.error('Error during conversion process:', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        response: error.response ? error.response.data : 'No response'
+      });
+      
+      // Более информативные ошибки для клиента
+      if (error.message.includes('File size exceeds')) {
+        return res.status(413).json({ error: error.message });
+      }
+      if (error.message.includes('API')) {
+        return res.status(422).json({ error: error.message });
+      }
+      
+      res.status(500).json({ error: `Failed to process file upload: ${error.message}` });
     });
 });
 
@@ -128,5 +227,7 @@ app.get('*', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`🚀 Convertio Server is running on http://localhost:${port}`);
+  console.log(`📁 Static files served from ./public`);
+  console.log(`🔄 Auto-restart enabled with nodemon`);
 });

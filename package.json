@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "serve:public": "npx serve -s public -l 3001"
+    "dev": "nodemon server.js",
+    "serve:public": "npx serve -s public -l 3001",
+    "restart": "npm run dev"
   },
   "dependencies": {
     "axios": "^1.4.0",

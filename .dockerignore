@@ -1,0 +1,22 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+README.md
+.env
+.nyc_output
+coverage
+.nyc_output
+.coverage
+.coverage/
+.DS_Store
+*.log
+video for test/
+.claude-flow/
+.swarm/
+DEVELOPMENT.md
+nodemon.json
+converted_*.jpg
+converted_*.mp4
+small_test_video.mkv
+medium_test_video.mkv

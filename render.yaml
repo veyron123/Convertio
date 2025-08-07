@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: convertio-app
+    env: node
+    region: frankfurt
+    plan: free
+    # ВНИМАНИЕ: Спящий режим через 15 минут неактивности на Free плане
+    buildCommand: npm install --only=production
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CONVERTIO_KEY
+        sync: false # Будет задана вручную в Render Dashboard
+    scaling:
+      minInstances: 1
+      maxInstances: 1
+    disk:
+      name: convertio-disk
+      size: 1GB
+      mountPath: /tmp
+    healthCheckPath: /

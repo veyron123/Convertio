@@ -148,6 +148,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  // Функции для управления видимостью статус-контейнера
+  const showStatus = (content) => {
+    statusContainer.innerHTML = content;
+    statusContainer.style.display = 'block';
+  };
+
+  const hideStatus = () => {
+    statusContainer.innerHTML = '';
+    statusContainer.style.display = 'none';
+  };
+
   // --- Client-side Routing ---
   const handleRouteChange = () => {
     const path = window.location.pathname;
@@ -215,6 +226,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // Переменная для хранения выбранного файла
   let selectedFile = null;
   
+  // Переменные для отслеживания времени
+  let uploadStartTime = null;
+  let conversionStartTime = null;
+  let totalStartTime = null;
+  
   // Функция обновления прогресс бара
   function updateProgress(percent, status, state = 'converting') {
     if (!progressContainer || !progressStatus || !progressPercent || !progressFill) return;
@@ -251,6 +267,9 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  // Максимальный размер файла для Render Free (400MB)
+  const MAX_FILE_SIZE = 400 * 1024 * 1024; // 400MB в байтах
+
   // Обработка выбора файла (БЕЗ автоконвертации)
   fileInput.addEventListener("change", (event) => {
     const file = event.target.files[0];
@@ -258,8 +277,17 @@ document.addEventListener("DOMContentLoaded", () => {
       selectedFile = null;
       fileInfo.style.display = "none";
       convertButton.disabled = true;
-      statusContainer.innerHTML = "";
+      hideStatus();
       hideProgress();
+      return;
+    }
+
+    // Проверка размера файла для Render Free
+    if (file.size > MAX_FILE_SIZE) {
+      showStatus(`❌ Файл слишком большой! Максимальный размер: 400MB (ваш файл: ${formatFileSize(file.size)})`, 'error');
+      selectedFile = null;
+      fileInfo.style.display = "none";
+      convertButton.disabled = true;
       return;
     }
 
@@ -276,20 +304,20 @@ document.addEventListener("DOMContentLoaded", () => {
     convertButton.disabled = false;
     
     // Очищаем предыдущие сообщения
-    statusContainer.innerHTML = "";
+    hideStatus();
     hideProgress();
   });
 
   // Обработка нажатия кнопки конвертации
   convertButton.addEventListener("click", async () => {
     if (!selectedFile) {
-      statusContainer.innerHTML = "<p>Пожалуйста, выберите файл для конвертации</p>";
+      showStatus("<p>Пожалуйста, выберите файл для конвертации</p>");
       return;
     }
 
     const outputFormat = outputFormatSelect.value;
     if (!outputFormat) {
-      statusContainer.innerHTML = "<p>Пожалуйста, выберите формат для конвертации</p>";
+      showStatus("<p>Пожалуйста, выберите формат для конвертации</p>");
       return;
     }
 
@@ -297,9 +325,25 @@ document.addEventListener("DOMContentLoaded", () => {
     convertButton.disabled = true;
     convertButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Конвертация...</span>';
     
-    // Показываем прогресс бар загрузки
-    updateProgress(10, 'Загрузка файла...', 'uploading');
-    statusContainer.innerHTML = "";
+    // Запускаем отсчет времени
+    totalStartTime = Date.now();
+    uploadStartTime = Date.now();
+    
+    // Показываем прогресс бар загрузки с симуляцией прогресса
+    updateProgress(0, 'Подготовка к загрузке...', 'uploading');
+    hideStatus();
+    
+    // Симулируем прогресс загрузки
+    let uploadProgress = 0;
+    const uploadProgressInterval = setInterval(() => {
+      uploadProgress += Math.random() * 15 + 5; // 5-20% за раз
+      if (uploadProgress > 85) {
+        clearInterval(uploadProgressInterval);
+        updateProgress(85, 'Завершение загрузки...', 'uploading');
+      } else {
+        updateProgress(Math.floor(uploadProgress), 'Загрузка файла...', 'uploading');
+      }
+    }, 500);
 
     const formData = new FormData();
     formData.append("file", selectedFile);
@@ -310,34 +354,53 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         body: formData,
       });
-
+  
       if (!startResponse.ok) {
-        const errorData = await startResponse.json();
-        let errorMessage = errorData.error || "Не удалось начать конвертацию";
-        
+        let errorMessage = "Не удалось начать конвертацию";
+        try {
+          const errorData = await startResponse.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (_) {
+          // fallback to plain text
+          const text = await startResponse.text();
+          if (text) {
+            errorMessage = text;
+          }
+        }
+  
         // Более понятные сообщения об ошибках
         if (startResponse.status === 413) {
-          errorMessage = "Файл слишком большой. Максимальный размер: 100MB";
+          errorMessage = "Файл слишком большой. Максимальный размер: 1GB";
         } else if (startResponse.status === 422) {
           errorMessage = "Неподдерживаемый формат файла или конвертации";
         } else if (startResponse.status === 402) {
           errorMessage = "Недостаточно минут для конвертации на вашем аккаунте";
+        } else if (startResponse.status >= 500) {
+          errorMessage = "Внутренняя ошибка сервера. Попробуйте позже.";
         }
-        
+  
         throw new Error(errorMessage);
       }
 
       const startData = await startResponse.json();
       const conversionId = startData.id;
       
-      // Обновляем прогресс бар
-      updateProgress(25, 'Конвертация началась...', 'converting');
+      // Загрузка завершена
+      const uploadTime = Date.now() - uploadStartTime;
+      conversionStartTime = Date.now();
       
-      pollConversionStatus(conversionId);
+      // Обновляем прогресс бар
+      updateProgress(100, `Загрузка завершена (${formatTime(uploadTime)})`, 'uploading');
+      
+      // Небольшая пауза перед началом отслеживания конвертации
+      setTimeout(() => {
+        updateProgress(0, 'Начинаем конвертацию...', 'converting');
+        pollConversionStatus(conversionId);
+      }, 1000);
 
     } catch (error) {
       console.error("Ошибка при запуске конвертации:", error);
-      statusContainer.innerHTML = `<p>Ошибка: ${error.message}</p>`;
+      showStatus(`<p>Ошибка: ${error.message}</p>`);
       
       // Показываем ошибку в прогресс баре
       updateProgress(0, 'Ошибка конвертации', 'error');
@@ -359,6 +422,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
+  
+  // Функция для форматирования времени в читаемый вид
+  function formatTime(milliseconds) {
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    
+    if (minutes > 0) {
+      return `${minutes}м ${remainingSeconds}с`;
+    } else {
+      return `${remainingSeconds}с`;
+    }
+  }
 
   async function pollConversionStatus(id) {
     try {
@@ -369,10 +445,29 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await response.json();
 
         if (data.step === "finish") {
+            // Подсчитываем время
+            const conversionTime = Date.now() - conversionStartTime;
+            const totalTime = Date.now() - totalStartTime;
+            const uploadTime = conversionStartTime - uploadStartTime;
+            
             // Показываем завершение
             updateProgress(100, 'Конвертация завершена!', 'completed');
             
-            statusContainer.innerHTML = `<a href="${data.output.url}" target="_blank" rel="noopener noreferrer">Скачать результат</a>`;
+            // Показываем детальную статистику времени
+            const timeStats = `
+              <div class="time-stats">
+                <h4>📊 Статистика времени:</h4>
+                <p><strong>⬆️ Загрузка файла:</strong> ${formatTime(uploadTime)}</p>
+                <p><strong>🔄 Конвертация:</strong> ${formatTime(conversionTime)}</p>
+                <p><strong>⏱️ Общее время:</strong> ${formatTime(totalTime)}</p>
+                <p><strong>📁 Размер результата:</strong> ${formatFileSize(data.output.size)}</p>
+              </div>
+              <div class="download-section">
+                <a href="${data.output.url}" target="_blank" rel="noopener noreferrer" class="download-link">📥 Скачать результат</a>
+              </div>
+            `;
+            
+            showStatus(timeStats);
             
             // Восстанавливаем кнопку конвертации через некоторое время
             setTimeout(() => {
@@ -380,18 +475,32 @@ document.addEventListener("DOMContentLoaded", () => {
                 convertButton.innerHTML = '<i class="fas fa-sync-alt"></i><span>Конвертировать</span>';
             }, 2000);
         } else {
-            const progress = data.step_percent || 0;
+            let progress = data.step_percent || 0;
             let statusText = data.step;
             
             // Переводим статусы на русский
             const statusTranslations = {
-                'upload': 'Загрузка...',
-                'wait': 'Ожидание...',
-                'convert': 'Конвертация...',
-                'finish': 'Завершение...'
+                'upload': 'Загрузка на сервер...',
+                'wait': 'Ожидание в очереди...',
+                'convert': 'Конвертация в процессе...',
+                'finish': 'Завершение конвертации...'
             };
             
             statusText = statusTranslations[data.step] || statusText;
+            
+            // Если прогресс не указан, симулируем его на основе времени
+            if (!progress || progress === 0) {
+                const elapsedTime = Date.now() - conversionStartTime;
+                if (data.step === 'wait') {
+                    progress = Math.min(20, Math.floor(elapsedTime / 1000) * 2); // 2% в секунду до 20%
+                } else if (data.step === 'convert') {
+                    progress = Math.min(85, 20 + Math.floor(elapsedTime / 3000) * 5); // 5% каждые 3 секунды после 20%
+                }
+            }
+            
+            // Добавляем время к статусу
+            const elapsedTime = Date.now() - conversionStartTime;
+            statusText += ` (${formatTime(elapsedTime)})`;
             
             // Обновляем прогресс бар
             updateProgress(progress, statusText, 'converting');
@@ -400,7 +509,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     } catch (error) {
         console.error("Ошибка при проверке статуса:", error);
-        statusContainer.innerHTML = "<p>Ошибка при проверке статуса. Попробуйте еще раз.</p>";
+        showStatus("<p>Ошибка при проверке статуса. Попробуйте еще раз.</p>");
         
         // Показываем ошибку в прогресс баре
         updateProgress(0, 'Ошибка проверки статуса', 'error');
@@ -413,4 +522,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 3000);
     }
   }
+  
+  // Инициализация форматов по умолчанию при загрузке страницы
+  updateFormatOptions('default');
 });

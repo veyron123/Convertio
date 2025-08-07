@@ -1,2 +1,17 @@
+node_modules/
 .env
 functions/.env
+*.log
+server.log
+pglite-debug.log
+video for test/
+.claude-flow/
+.swarm/
+DEVELOPMENT.md
+nodemon.json
+converted_*.jpg
+converted_*.mp4
+small_test_video.mkv
+medium_test_video.mkv
+"public/test img/"
+NUL

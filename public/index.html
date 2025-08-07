@@ -21,9 +21,6 @@
                 <span>Convertio</span>
             </div>
             <nav class="nav">
-                <a href="#" class="nav-link">Конвертировать</a>
-                <a href="#" class="nav-link">Инструменты</a>
-                <a href="#" class="nav-link">API</a>
                 <a href="#" class="nav-link login-btn">Войти</a>
             </nav>
         </div>
@@ -76,15 +73,37 @@
 
             <!-- Секция конвертера -->
             <div class="converter-wrapper">
-                <!-- Выбор файла -->
-                <div class="file-upload-section">
-                    <input type="file" id="file-input" style="display: none;" />
-                    <button class="file-upload-btn" id="choose-file-btn">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <span>Выбрать файл</span>
-                    </button>
-                    <div class="file-size-limit">
-                        100 MB maximum file size or <a href="#" class="signup-link">Sign Up</a>
+                <!-- Горизонтальная компоновка основных элементов -->
+                <div class="converter-horizontal-layout">
+                    <!-- Левая часть: Загрузка файла -->
+                    <div class="file-upload-section">
+                        <input type="file" id="file-input" style="display: none;" />
+                        <button class="file-upload-btn" id="choose-file-btn">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Выбрать файл</span>
+                        </button>
+                        <div class="file-size-limit">
+                            1 GB max or <a href="#" class="signup-link">Sign Up</a>
+                        </div>
+                    </div>
+
+                    <!-- Центральная часть: Селектор формата -->
+                    <div class="format-selector-section">
+                        <label class="format-label">Конвертировать в:</label>
+                        <div class="format-select-wrapper">
+                            <select id="output-format" class="format-select">
+                                <!-- Форматы добавляются динамически -->
+                            </select>
+                            <i class="fas fa-chevron-down select-icon"></i>
+                        </div>
+                    </div>
+
+                    <!-- Правая часть: Кнопка конвертации -->
+                    <div class="convert-section">
+                        <button class="convert-btn" id="convert-button" disabled>
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Конвертировать</span>
+                        </button>
                     </div>
                 </div>
 
@@ -98,23 +117,6 @@
                         <div class="file-size" id="file-size"></div>
                     </div>
                 </div>
-
-                <!-- Выбор формата -->
-                <div class="format-selector-section">
-                    <label class="format-label">Конвертировать в:</label>
-                    <div class="format-select-wrapper">
-                        <select id="output-format" class="format-select">
-                            <!-- Форматы добавляются динамически -->
-                        </select>
-                        <i class="fas fa-chevron-down select-icon"></i>
-                    </div>
-                </div>
-
-                <!-- Кнопка конвертации -->
-                <button class="convert-btn" id="convert-button" disabled>
-                    <i class="fas fa-sync-alt"></i>
-                    <span>Конвертировать</span>
-                </button>
 
                 <!-- Прогресс бар конвертации -->
                 <div id="progress-container" class="progress-container" style="display: none;">
@@ -133,6 +135,71 @@
                 <div id="status-container" class="status-section"></div>
             </div>
 
+            <!-- Секция ключевых преимуществ -->
+            <div class="features-section">
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-file"></i>
+                        </div>
+                        <h3 class="feature-title">300+ formats supported</h3>
+                        <p class="feature-description">
+                            We support more than 25600 different conversions between more than 300 different <a href="#" class="feature-link">file formats</a>. More than any other converter.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h3 class="feature-title">Fast and easy</h3>
+                        <p class="feature-description">
+                            Just drop your files on the page, choose an output format and click "Convert" button. Wait a little for the process to complete. We aim to do all our conversions in under 1-2 minutes.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-cloud"></i>
+                        </div>
+                        <h3 class="feature-title">In the cloud</h3>
+                        <p class="feature-description">
+                            All conversions take place in the cloud and will not consume any capacity from your computer.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <h3 class="feature-title">Custom settings</h3>
+                        <p class="feature-description">
+                            Most conversion types support advanced options. For example with a video converter you can choose quality, aspect ratio, codec and other settings, rotate and flip.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 class="feature-title">Security guaranteed</h3>
+                        <p class="feature-description">
+                            We delete uploaded files instantly and converted ones after 24 hours. No one has access to your files and privacy is 100% guaranteed. Read more about <a href="#" class="feature-link">security</a>.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-desktop"></i>
+                        </div>
+                        <h3 class="feature-title">All devices supported</h3>
+                        <p class="feature-description">
+                            Convertio is browser-based and works for all platforms. There is no need to download and install any software.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
 
@@ -140,26 +207,21 @@
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section">
-                <h4>О нас</h4>
-                <a href="#">О компании</a>
-                <a href="#">Контакты</a>
-                <a href="#">Условия использования</a>
+                <a href="#">About</a>
+                <a href="#">Security</a>
+                <a href="#">Formats</a>
+                <a href="#">Help</a>
             </div>
             <div class="footer-section">
-                <h4>API</h4>
-                <a href="#">Документация</a>
-                <a href="#">Примеры</a>
-                <a href="#">Тарифы</a>
-            </div>
-            <div class="footer-section">
-                <h4>Поддержка</h4>
-                <a href="#">FAQ</a>
-                <a href="#">Помощь</a>
-                <a href="#">Безопасность</a>
+                <a href="#">Video Converter</a>
+                <a href="#">Audio Converter</a>
+                <a href="#">Document Converter</a>
+                <a href="#">Image Converter</a>
+                <a href="#">OCR</a>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2024 Convertio. Все права защищены.</p>
+            <p>&copy; 2025 Convert-Me / <a href="#">Terms of Use</a> / <a href="#">Privacy Policy</a></p>
         </div>
     </footer>
 

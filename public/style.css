@@ -89,46 +89,46 @@ html, body {
 
 /* Главная секция конвертера */
 .main-converter {
-    min-height: 100vh;
+    min-height: calc(100vh - 80px);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 100px 20px 60px;
+    padding: 90px 20px 30px;
 }
 
 .converter-container {
     width: 100%;
-    max-width: 600px;
+    max-width: 800px;
     text-align: center;
 }
 
 .hero-section {
-    margin-bottom: 60px;
+    margin-bottom: 40px;
 }
 
 .main-title {
-    font-size: 3.5rem;
+    font-size: 3rem;
     font-weight: 700;
     color: white;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     letter-spacing: -0.02em;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .main-subtitle {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     color: rgba(255, 255, 255, 0.9);
     font-weight: 400;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 /* Типы конвертеров */
 .converter-types {
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
     padding: 0 20px;
 }
 
@@ -136,17 +136,17 @@ html, body {
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-    padding: 12px 16px;
+    border-radius: 10px;
+    padding: 10px 14px;
     color: white;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     font-weight: 500;
-    font-size: 14px;
-    min-width: 100px;
+    font-size: 13px;
+    min-width: 90px;
     justify-content: center;
 }
 
@@ -168,33 +168,51 @@ html, body {
 /* Секция конвертера */
 .converter-wrapper {
     background: white;
-    border-radius: 24px;
-    padding: 40px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-    margin-bottom: 40px;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
     border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Горизонтальная компоновка */
+.converter-horizontal-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.converter-horizontal-layout > * {
+    flex: 1;
+    min-width: 0;
 }
 
 /* Загрузка файла */
 .file-upload-section {
-    margin-bottom: 30px;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .file-upload-btn {
     width: 100%;
     background: white;
     border: 2px dashed #e53e3e;
-    border-radius: 16px;
-    padding: 40px 20px;
+    border-radius: 12px;
+    padding: 20px 15px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
     color: #e53e3e;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
+    min-height: 96px;
+    justify-content: center;
 }
 
 .file-upload-btn:hover {
@@ -204,13 +222,13 @@ html, body {
 }
 
 .file-upload-btn i {
-    font-size: 2.5rem;
-    margin-bottom: 8px;
+    font-size: 1.8rem;
+    margin-bottom: 2px;
 }
 
 .file-size-limit {
-    margin-top: 16px;
-    font-size: 14px;
+    margin-top: 8px;
+    font-size: 12px;
     color: #666;
 }
 
@@ -269,16 +287,19 @@ html, body {
 
 /* Селектор формата */
 .format-selector-section {
-    margin-bottom: 30px;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .format-label {
     display: block;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     color: #333;
-    margin-bottom: 12px;
-    text-align: left;
+    margin-bottom: 8px;
+    text-align: center;
 }
 
 .format-select-wrapper {
@@ -287,17 +308,18 @@ html, body {
 
 .format-select {
     width: 100%;
-    padding: 16px 20px;
-    padding-right: 50px;
+    padding: 12px 16px;
+    padding-right: 40px;
     border: 2px solid #e8e8e8;
-    border-radius: 12px;
+    border-radius: 8px;
     background: white;
-    font-size: 16px;
+    font-size: 14px;
     color: #333;
     cursor: pointer;
     transition: all 0.3s ease;
     appearance: none;
     font-weight: 500;
+    min-height: 44px;
 }
 
 .format-select:focus {
@@ -317,23 +339,30 @@ html, body {
 }
 
 /* Кнопка конвертации */
+.convert-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .convert-btn {
     width: 100%;
-    padding: 18px 24px;
+    padding: 14px 20px;
     background: linear-gradient(135deg, #e53e3e, #d63031);
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     color: white;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    box-shadow: 0 4px 20px rgba(229, 62, 62, 0.3);
-    margin-bottom: 20px;
+    gap: 8px;
+    box-shadow: 0 3px 15px rgba(229, 62, 62, 0.25);
+    margin-bottom: 0;
+    min-height: 96px;
 }
 
 .convert-btn:hover:not(:disabled) {
@@ -464,6 +493,7 @@ html, body {
     color: #666;
     text-align: center;
     margin-top: 10px;
+    display: none; /* Скрыт по умолчанию */
 }
 
 .status-section p {
@@ -484,6 +514,65 @@ html, body {
 
 .status-section a:hover {
     background: rgba(229, 62, 62, 0.2);
+}
+
+/* Секция ключевых преимуществ */
+.features-section {
+    margin: 60px 0;
+    padding: 0 20px;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.feature-item {
+    text-align: center;
+    padding: 20px;
+}
+
+.feature-icon {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    color: white;
+    font-size: 24px;
+}
+
+.feature-title {
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.feature-description {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.feature-link {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: underline;
+    transition: color 0.3s ease;
+}
+
+.feature-link:hover {
+    color: white;
 }
 
 /* Footer */
@@ -598,7 +687,7 @@ input[type="file"] {
     }
     
     .converter-container {
-        max-width: 500px;
+        max-width: 700px;
     }
     
     .main-title {
@@ -709,15 +798,21 @@ input[type="file"] {
     
     /* Конвертер */
     .converter-wrapper {
-        padding: 25px 20px;
+        padding: 20px;
         border-radius: 18px;
         margin: 0 10px;
+    }
+    
+    /* Горизонтальная компоновка на планшетах */
+    .converter-horizontal-layout {
+        gap: 15px;
     }
     
     .file-upload-btn {
         padding: 35px 20px;
         border-radius: 14px;
         font-size: 15px;
+        min-height: 96px;
     }
     
     .file-upload-btn i {
@@ -777,6 +872,7 @@ input[type="file"] {
         font-size: 15px;
         border-radius: 10px;
         gap: 8px;
+        min-height: 96px;
     }
     
     .convert-btn i {
@@ -798,6 +894,32 @@ input[type="file"] {
         font-size: 15px;
     }
     
+    /* Features section */
+    .features-section {
+        margin: 40px 0;
+        padding: 0 15px;
+    }
+    
+    .features-grid {
+        gap: 30px;
+    }
+    
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
+    
+    .feature-title {
+        font-size: 1.1rem;
+        margin-bottom: 12px;
+    }
+    
+    .feature-description {
+        font-size: 0.9rem;
+    }
+
     /* Footer */
     .footer {
         padding: 40px 0 20px;
@@ -882,14 +1004,26 @@ input[type="file"] {
     }
     
     .converter-wrapper {
-        padding: 20px 15px;
+        padding: 15px;
         border-radius: 16px;
         margin: 0 5px;
+    }
+    
+    /* Вертикальная компоновка на мобильных */
+    .converter-horizontal-layout {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .format-label {
+        text-align: left;
     }
     
     .file-upload-btn {
         padding: 30px 15px;
         font-size: 14px;
+        min-height: 80px;
     }
     
     .file-upload-btn i {
@@ -927,6 +1061,7 @@ input[type="file"] {
     .convert-btn {
         padding: 14px 18px;
         font-size: 14px;
+        min-height: 80px;
     }
     
     .progress-container {
@@ -945,6 +1080,37 @@ input[type="file"] {
     #progress-percent {
         font-size: 14px;
         margin-top: 2px;
+    }
+    
+    /* Features section mobile */
+    .features-section {
+        margin: 30px 0;
+        padding: 0 10px;
+    }
+    
+    .features-grid {
+        grid-template-columns: 1fr;
+        gap: 25px;
+    }
+    
+    .feature-item {
+        padding: 15px;
+    }
+    
+    .feature-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
+    
+    .feature-title {
+        font-size: 1rem;
+        margin-bottom: 10px;
+    }
+    
+    .feature-description {
+        font-size: 0.85rem;
     }
     
     .footer {
@@ -997,11 +1163,12 @@ input[type="file"] {
     }
     
     .converter-wrapper {
-        padding: 18px 12px;
+        padding: 12px;
     }
     
     .file-upload-btn {
         padding: 25px 12px;
+        min-height: 80px;
     }
 }
 
@@ -1029,7 +1196,7 @@ input[type="file"] {
     }
     
     .file-upload-btn {
-        min-height: 60px;
+        min-height: 44px;
     }
     
     /* Активные состояния для touch */
@@ -1046,4 +1213,66 @@ input[type="file"] {
         background: rgba(229, 62, 62, 0.1);
         transform: scale(0.98);
     }
+}
+
+/* Стили для статистики времени */
+.time-stats {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 15px 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #667eea;
+    text-align: left;
+}
+
+.time-stats h4 {
+    margin: 0 0 15px 0;
+    color: #4a5568;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.time-stats p {
+    margin: 8px 0;
+    color: #2d3748;
+    font-size: 14px;
+    line-height: 1.5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.time-stats strong {
+    color: #667eea;
+    font-weight: 600;
+    min-width: 180px;
+}
+
+.download-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.download-link {
+    display: inline-block;
+    background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.download-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    text-decoration: none;
+    color: white;
 }
