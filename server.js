@@ -11,6 +11,17 @@ const app = express();
 const port = process.env.PORT || 3012;
 const convertioKey = process.env.CONVERTIO_KEY;
 
+// Диагностика переменных окружения при запуске
+console.log('🔍 Environment Check:');
+console.log(`Port: ${port}`);
+console.log(`CONVERTIO_KEY: ${convertioKey ? 'SET ✅' : 'MISSING ❌'}`);
+console.log(`NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+
+if (!convertioKey) {
+  console.error('🚨 CRITICAL: CONVERTIO_KEY environment variable is not set!');
+  console.error('   Please set CONVERTIO_KEY in Render Dashboard Environment Variables');
+}
+
 app.use(cors({ origin: true }));
 app.use(express.static('public'));
 
@@ -18,6 +29,14 @@ app.use(express.static('public'));
 app.set('trust proxy', true);
 
 app.post('/api/start-conversion', (req, res) => {
+  // Дополнительная проверка CONVERTIO_KEY на каждый запрос
+  if (!convertioKey) {
+    console.error('🚨 CONVERTIO_KEY missing in request handler');
+    return res.status(500).json({ 
+      error: 'Server configuration error: CONVERTIO_KEY not set. Please check Render Environment Variables.' 
+    });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).send('Method Not Allowed');
   }
@@ -168,10 +187,16 @@ app.post('/api/start-conversion', (req, res) => {
         // Возвращаем ID конвертации
         resolve({ id: conversionId });
       } catch (error) {
-        console.error('Detailed error in conversion process:', {
+        console.error('🚨 Detailed error in conversion process:', {
           message: error.message,
           stack: error.stack,
-          response: error.response ? error.response.data : 'No response data'
+          code: error.code,
+          convertioKey: convertioKey ? 'SET' : 'MISSING',
+          response: error.response ? {
+            status: error.response.status,
+            statusText: error.response.statusText,
+            data: error.response.data
+          } : 'No response data'
         });
         reject(error);
       }
@@ -183,16 +208,23 @@ app.post('/api/start-conversion', (req, res) => {
   req.pipe(busboy);
 
   conversionPromise
-    .then((data) => res.json({ id: data.id }))
+    .then((data) => {
+      console.log('✅ Conversion started successfully:', data.id);
+      res.json({ id: data.id });
+    })
     .catch((error) => {
-      console.error('Error during conversion process:', {
+      console.error('🚨 Error during conversion process:', {
         message: error.message,
         stack: error.stack,
         code: error.code,
+        convertioKey: convertioKey ? 'SET' : 'MISSING',
         response: error.response ? error.response.data : 'No response'
       });
       
       // Более информативные ошибки для клиента
+      if (error.message.includes('configuration error')) {
+        return res.status(500).json({ error: error.message });
+      }
       if (error.message.includes('File size exceeds')) {
         return res.status(413).json({ error: error.message });
       }
@@ -202,6 +234,22 @@ app.post('/api/start-conversion', (req, res) => {
       
       res.status(500).json({ error: `Failed to process file upload: ${error.message}` });
     });
+});
+
+// Health check эндпоинт для диагностики
+app.get('/api/health', (req, res) => {
+  const health = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: {
+      port: port,
+      nodeEnv: process.env.NODE_ENV || 'not set',
+      convertioKey: convertioKey ? 'SET ✅' : 'MISSING ❌'
+    }
+  };
+  
+  console.log('🏥 Health check requested:', health);
+  res.json(health);
 });
 
 app.get('/api/conversion-status/:id', async (req, res) => {
