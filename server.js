@@ -252,6 +252,44 @@ app.get('/api/health', (req, res) => {
   res.json(health);
 });
 
+// Простой тест Convertio API без загрузки файла
+app.get('/api/test-convertio', async (req, res) => {
+  console.log('🧪 Testing Convertio API connection...');
+  
+  if (!convertioKey) {
+    return res.status(500).json({ error: 'CONVERTIO_KEY not set' });
+  }
+
+  try {
+    // Тестовый запрос к Convertio API
+    const response = await axios.post('https://api.convertio.co/convert', {
+      apikey: convertioKey,
+      input: 'base64',
+      file: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==', // Минимальный 1x1 PNG
+      filename: 'test.png',
+      outputformat: 'jpg',
+    });
+
+    console.log('✅ Convertio API test response:', response.data);
+    res.json({
+      success: true,
+      convertio_response: response.data,
+      message: 'Convertio API working!'
+    });
+  } catch (error) {
+    console.error('🚨 Convertio API test failed:', {
+      message: error.message,
+      response: error.response ? error.response.data : 'No response'
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      convertio_error: error.response ? error.response.data : null
+    });
+  }
+});
+
 app.get('/api/conversion-status/:id', async (req, res) => {
   try {
     const { id } = req.params;
