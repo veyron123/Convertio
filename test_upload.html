@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Upload</title>
+</head>
+<body>
+    <h1>Тест загрузки файлов</h1>
+    
+    <h2>1. Тест простой загрузки</h2>
+    <form id="testForm" enctype="multipart/form-data">
+        <input type="file" id="testFile" name="file">
+        <button type="button" onclick="testUpload()">Тест загрузки</button>
+    </form>
+    
+    <h2>2. Тест конвертации</h2>
+    <form id="convertForm" enctype="multipart/form-data">
+        <input type="file" id="convertFile" name="file">
+        <select id="outputFormat" name="outputformat">
+            <option value="jpg">JPG</option>
+            <option value="png">PNG</option>
+            <option value="gif">GIF</option>
+        </select>
+        <button type="button" onclick="testConvert()">Тест конвертации</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+    function testUpload() {
+        const fileInput = document.getElementById('testFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('Выберите файл');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        document.getElementById('result').innerHTML = 'Загружаем...';
+        
+        fetch('/api/test-upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('result').innerHTML = 'Результат теста: ' + JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+            document.getElementById('result').innerHTML = 'Ошибка: ' + error.message;
+            console.error('Error:', error);
+        });
+    }
+    
+    function testConvert() {
+        const fileInput = document.getElementById('convertFile');
+        const file = fileInput.files[0];
+        const format = document.getElementById('outputFormat').value;
+        
+        if (!file) {
+            alert('Выберите файл');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('outputformat', format);
+        
+        document.getElementById('result').innerHTML = 'Конвертируем...';
+        
+        fetch('/api/start-conversion', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('result').innerHTML = 'Результат конвертации: ' + JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+            document.getElementById('result').innerHTML = 'Ошибка конвертации: ' + error.message;
+            console.error('Error:', error);
+        });
+    }
+    </script>
+</body>
+</html>

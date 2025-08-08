@@ -8,32 +8,38 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const port = process.env.PORT || 3012;
-const convertioKey = process.env.CONVERTIO_KEY;
+const port = process.env.PORT || 3002;
+const cloudConvertKey = process.env.CLOUDCONVERT_KEY;
 
 // Диагностика переменных окружения при запуске
 console.log('🔍 Environment Check:');
 console.log(`Port: ${port}`);
-console.log(`CONVERTIO_KEY: ${convertioKey ? 'SET ✅' : 'MISSING ❌'}`);
+console.log(`CLOUDCONVERT_KEY: ${cloudConvertKey ? 'SET ✅' : 'MISSING ❌'}`);
 console.log(`NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 
-if (!convertioKey) {
-  console.error('🚨 CRITICAL: CONVERTIO_KEY environment variable is not set!');
-  console.error('   Please set CONVERTIO_KEY in Render Dashboard Environment Variables');
+if (!cloudConvertKey) {
+  console.error('🚨 CRITICAL: CLOUDCONVERT_KEY environment variable is not set!');
+  console.error('   Please set CLOUDCONVERT_KEY in Render Dashboard Environment Variables');
 }
 
 app.use(cors({ origin: true }));
 app.use(express.static('public'));
 
+// Увеличиваем лимиты для больших файлов
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 // Middleware для получения реального IP адреса
 app.set('trust proxy', true);
 
 app.post('/api/start-conversion', (req, res) => {
-  // Дополнительная проверка CONVERTIO_KEY на каждый запрос
-  if (!convertioKey) {
-    console.error('🚨 CONVERTIO_KEY missing in request handler');
+  console.log('🔄 Received conversion request');
+  
+  // Дополнительная проверка CLOUDCONVERT_KEY на каждый запрос
+  if (!cloudConvertKey) {
+    console.error('🚨 CLOUDCONVERT_KEY missing in request handler');
     return res.status(500).json({ 
-      error: 'Server configuration error: CONVERTIO_KEY not set. Please check Render Environment Variables.' 
+      error: 'Server configuration error: CLOUDCONVERT_KEY not set. Please check Render Environment Variables.' 
     });
   }
 
@@ -41,10 +47,32 @@ app.post('/api/start-conversion', (req, res) => {
     return res.status(405).send('Method Not Allowed');
   }
 
-  const busboy = Busboy({ headers: req.headers });
-  const tmpdir = os.tmpdir();
-  const fields = {};
-  const fileWrites = [];
+  // Установим таймауты для предотвращения висящих соединений
+  req.setTimeout(120000); // 2 минуты
+  res.setTimeout(120000);
+
+  // Обработка неожиданных отключений
+  req.on('close', () => {
+    console.log('⚠️ Client disconnected during upload');
+  });
+
+  try {
+    const busboy = Busboy({ 
+      headers: req.headers,
+      limits: {
+        fileSize: 400 * 1024 * 1024, // 400MB
+        files: 1,
+        fieldSize: 10 * 1024 * 1024, // 10MB для полей
+        parts: 10 // максимум 10 частей
+      },
+      defCharset: 'utf8'
+    });
+    
+    const tmpdir = os.tmpdir();
+    const fields = {};
+    const fileWrites = [];
+    
+    console.log('📝 Busboy initialized successfully');
 
   busboy.on('field', (fieldname, val) => {
     fields[fieldname] = val;
@@ -107,115 +135,157 @@ app.post('/api/start-conversion', (req, res) => {
           console.log(`File upload: ${fileSizeInMB.toFixed(2)}MB from IP: ${clientIP}, isLocalhost: ${isLocalhost}, useDirectUpload: ${shouldUseDirectUpload}`);
           
           if (!shouldUseDirectUpload) {
-            // Для файлов меньше 300MB используем base64
+            // Для файлов меньше 200MB используем base64
             fileBuffer = fs.readFileSync(uploadedFile.filepath);
           }
-        } finally {
-          // Удаляем временный файл только для base64 загрузки
-          if (!shouldUseDirectUpload && fs.existsSync(uploadedFile.filepath)) {
-            fs.unlinkSync(uploadedFile.filepath);
-          }
+        } catch (fileError) {
+          console.error('Error reading file:', fileError);
+          throw new Error(`File reading error: ${fileError.message}`);
         }
 
         let response;
-        let conversionId;
+        let jobId;
 
+        // CloudConvert работает через Jobs с множественными задачами
+        console.log(`🔄 Starting CloudConvert job for ${uploadedFile.filename} → ${fields.outputformat}`);
+        
         if (shouldUseDirectUpload) {
-          // Для больших файлов используем direct upload
-          console.log('Using direct upload for large file...');
+          // Для больших файлов используем upload задачу
+          console.log('Using CloudConvert upload task for large file...');
           
-          // Добавляем браузерные заголовки
-          const headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          };
-          
-          // Шаг 1: Создаем задачу конвертации с input: "upload"
-          response = await axios.post('https://api.convertio.co/convert', {
-            apikey: convertioKey,
-            input: 'upload',
-            filename: uploadedFile.filename,
-            outputformat: fields.outputformat,
-          }, { headers });
+          response = await axios.post('https://api.cloudconvert.com/v2/jobs', {
+            tasks: {
+              'upload-file': {
+                operation: 'import/upload'
+              },
+              'convert-file': {
+                operation: 'convert',
+                input: 'upload-file',
+                output_format: fields.outputformat
+              },
+              'export-file': {
+                operation: 'export/url',
+                input: 'convert-file'
+              }
+            }
+          }, {
+            headers: {
+              'Authorization': `Bearer ${cloudConvertKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
 
-          if (response.data.status !== 'ok') {
-            throw new Error(response.data.error || 'Failed to create conversion task');
+          if (response.status !== 200) {
+            throw new Error('Failed to create CloudConvert job');
           }
 
-          conversionId = response.data.data.id;
+          jobId = response.data.data.id;
+          const uploadTask = response.data.data.tasks.find(task => task.name === 'upload-file');
           
-          // Шаг 2: Загружаем файл через PUT запрос
-          console.log(`Uploading file for conversion ID: ${conversionId}`);
-          
+          // Загружаем файл на CloudConvert
+          console.log(`📤 Uploading file to CloudConvert...`);
           const fileStream = fs.createReadStream(uploadedFile.filepath);
-          const uploadResponse = await axios.put(
-            `https://api.convertio.co/convert/${conversionId}/${encodeURIComponent(uploadedFile.filename)}`,
-            fileStream,
-            {
-              headers: {
-                'Content-Type': 'application/octet-stream',
-                'Content-Length': fs.statSync(uploadedFile.filepath).size
-              },
-              maxContentLength: Infinity,
-              maxBodyLength: Infinity,
-              timeout: 1800000 // 30 минут таймаут для больших файлов
-            }
-          );
+          
+          const uploadResponse = await axios.post(uploadTask.result.form.url, {
+            ...uploadTask.result.form.parameters,
+            file: fileStream
+          }, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            },
+            timeout: 1800000 // 30 минут
+          });
 
-          // Удаляем временный файл после загрузки
+          // Удаляем временный файл
           if (fs.existsSync(uploadedFile.filepath)) {
             fs.unlinkSync(uploadedFile.filepath);
           }
-
-          if (uploadResponse.data.status !== 'ok') {
-            throw new Error(uploadResponse.data.error || 'Failed to upload file');
-          }
-
-          console.log('File uploaded successfully via direct upload');
           
         } else {
-          // Для файлов меньше 300MB используем base64
-          const headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          };
+          // Для файлов меньше 200MB используем base64
+          console.log('Using CloudConvert base64 import for small file...');
           
-          response = await axios.post('https://api.convertio.co/convert', {
-            apikey: convertioKey,
-            input: 'base64',
-            file: fileBuffer.toString('base64'),
-            filename: uploadedFile.filename,
-            outputformat: fields.outputformat,
-          }, { headers });
+          response = await axios.post('https://api.cloudconvert.com/v2/jobs', {
+            tasks: {
+              'import-file': {
+                operation: 'import/base64',
+                file: fileBuffer.toString('base64'),
+                filename: uploadedFile.filename
+              },
+              'convert-file': {
+                operation: 'convert',
+                input: 'import-file',
+                output_format: fields.outputformat
+              },
+              'export-file': {
+                operation: 'export/url',
+                input: 'convert-file'
+              }
+            }
+          }, {
+            headers: {
+              'Authorization': `Bearer ${cloudConvertKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
 
-          if (response.data.status !== 'ok') {
-            throw new Error(response.data.error || 'Convertio API returned an error');
+          if (response.status !== 200) {
+            throw new Error('Failed to create CloudConvert job');
           }
 
-          conversionId = response.data.data.id;
+          jobId = response.data.data.id;
         }
 
-        // Возвращаем ID конвертации
-        resolve({ id: conversionId });
+        // Удаляем временный файл после успешного создания job
+        if (fs.existsSync(uploadedFile.filepath)) {
+          fs.unlinkSync(uploadedFile.filepath);
+          console.log(`🗑️ Temporary file deleted: ${uploadedFile.filepath}`);
+        }
+        
+        // Возвращаем CloudConvert Job ID
+        console.log(`✅ CloudConvert job created successfully: ${jobId}`);
+        resolve({ id: jobId });
       } catch (error) {
-        console.error('🚨 Detailed error in conversion process:', {
+        console.error('🚨 Detailed error in CloudConvert process:', {
           message: error.message,
           stack: error.stack,
           code: error.code,
-          convertioKey: convertioKey ? 'SET' : 'MISSING',
+          cloudConvertKey: cloudConvertKey ? 'SET' : 'MISSING',
           response: error.response ? {
             status: error.response.status,
             statusText: error.response.statusText,
             data: error.response.data
           } : 'No response data'
         });
+        
+        // Удаляем временный файл в случае ошибки
+        if (uploadedFile && fs.existsSync(uploadedFile.filepath)) {
+          try {
+            fs.unlinkSync(uploadedFile.filepath);
+            console.log(`🗑️ Temporary file deleted after error: ${uploadedFile.filepath}`);
+          } catch (deleteError) {
+            console.error('Error deleting temporary file:', deleteError);
+          }
+        }
+        
         reject(error);
       }
     });
 
-    busboy.on('error', (err) => reject(err));
+    busboy.on('error', (err) => {
+    console.error('🚨 Busboy error:', err);
+    reject(err);
+  });
+
+  // Обработка ошибок соединения
+  req.on('error', (err) => {
+    console.error('🚨 Request error:', err);
+    reject(new Error('Request connection error'));
+  });
+
+  req.on('aborted', () => {
+    console.error('🚨 Request aborted by client');
+    reject(new Error('Request was aborted'));
   });
 
   req.pipe(busboy);
@@ -226,11 +296,11 @@ app.post('/api/start-conversion', (req, res) => {
       res.json({ id: data.id });
     })
     .catch((error) => {
-      console.error('🚨 Error during conversion process:', {
+      console.error('🚨 Error during CloudConvert process:', {
         message: error.message,
         stack: error.stack,
         code: error.code,
-        convertioKey: convertioKey ? 'SET' : 'MISSING',
+        cloudConvertKey: cloudConvertKey ? 'SET' : 'MISSING',
         response: error.response ? error.response.data : 'No response'
       });
       
@@ -247,6 +317,69 @@ app.post('/api/start-conversion', (req, res) => {
       
       res.status(500).json({ error: `Failed to process file upload: ${error.message}` });
     });
+  } catch (initError) {
+    console.error('🚨 Error initializing busboy:', initError);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to initialize file upload handler' });
+    }
+  }
+});
+
+// Глобальная обработка неперехваченных ошибок
+process.on('uncaughtException', (error) => {
+  console.error('🚨 Uncaught Exception:', error);
+  // НЕ выходим из процесса, продолжаем работу
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
+  // НЕ выходим из процесса, продолжаем работу
+});
+
+// Простой тестовый endpoint для проверки загрузки файлов
+app.post('/api/test-upload', (req, res) => {
+  console.log('🧪 Test upload endpoint');
+  
+  try {
+    const busboy = Busboy({ 
+      headers: req.headers,
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB для теста
+        files: 1
+      }
+    });
+    
+    let fileReceived = false;
+    
+    busboy.on('file', (fieldname, file, { filename }) => {
+      console.log('📁 File received:', filename);
+      fileReceived = true;
+      
+      let fileSize = 0;
+      file.on('data', (data) => {
+        fileSize += data.length;
+      });
+      
+      file.on('end', () => {
+        console.log('✅ File upload complete:', fileSize, 'bytes');
+      });
+    });
+    
+    busboy.on('finish', () => {
+      console.log('✅ Upload finished');
+      res.json({ 
+        success: true, 
+        message: 'File uploaded successfully',
+        fileReceived: fileReceived
+      });
+    });
+    
+    req.pipe(busboy);
+    
+  } catch (error) {
+    console.error('🚨 Test upload error:', error);
+    res.status(500).json({ error: 'Test upload failed' });
+  }
 });
 
 // Health check эндпоинт для диагностики
@@ -257,12 +390,151 @@ app.get('/api/health', (req, res) => {
     environment: {
       port: port,
       nodeEnv: process.env.NODE_ENV || 'not set',
-      convertioKey: convertioKey ? 'SET ✅' : 'MISSING ❌'
+      cloudConvertKey: cloudConvertKey ? 'SET ✅' : 'MISSING ❌'
     }
   };
   
   console.log('🏥 Health check requested:', health);
   res.json(health);
+});
+
+// Тест CloudConvert API
+app.get('/api/test-cloudconvert', async (req, res) => {
+  console.log('🧪 Testing CloudConvert API...');
+  
+  if (!cloudConvertKey) {
+    return res.status(500).json({ error: 'CLOUDCONVERT_KEY not set' });
+  }
+
+  try {
+    // Шаг 1: Создаем job для конвертации
+    const jobResponse = await axios.post('https://api.cloudconvert.com/v2/jobs', {
+      tasks: {
+        'import-file': {
+          operation: 'import/base64',
+          file: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
+          filename: 'test.png'
+        },
+        'convert-file': {
+          operation: 'convert',
+          input: 'import-file',
+          output_format: 'jpg'
+        },
+        'export-file': {
+          operation: 'export/url',
+          input: 'convert-file'
+        }
+      }
+    }, {
+      headers: {
+        'Authorization': `Bearer ${cloudConvertKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('✅ CloudConvert API test response:', jobResponse.data);
+    res.json({
+      success: true,
+      cloudconvert_response: jobResponse.data,
+      message: 'CloudConvert API working!'
+    });
+  } catch (error) {
+    console.error('🚨 CloudConvert API test failed:', {
+      message: error.message,
+      response: error.response ? error.response.data : 'No response'
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      cloudconvert_error: error.response ? error.response.data : null
+    });
+  }
+});
+
+// Простой тест точно как curl
+app.get('/api/test-curl-like', async (req, res) => {
+  console.log('🧪 Testing Convertio API exactly like curl...');
+  
+  if (!convertioKey) {
+    return res.status(500).json({ error: 'CONVERTIO_KEY not set' });
+  }
+
+  try {
+    const response = await fetch('https://api.convertio.co/convert', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': '*/*'
+      },
+      body: JSON.stringify({
+        "apikey": convertioKey,
+        "input": "base64", 
+        "file": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
+        "filename": "test.png",
+        "outputformat": "jpg"
+      })
+    });
+
+    const data = await response.json();
+    console.log('🔍 Curl-like response:', { status: response.status, data });
+
+    res.json({
+      success: response.ok,
+      status: response.status,
+      convertio_response: data,
+      method: 'curl-like'
+    });
+  } catch (error) {
+    console.error('🚨 Curl-like test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      method: 'curl-like'
+    });
+  }
+});
+
+// Простой тест Convertio API с fetch вместо axios
+app.get('/api/test-convertio-fetch', async (req, res) => {
+  console.log('🧪 Testing Convertio API with fetch...');
+  
+  if (!convertioKey) {
+    return res.status(500).json({ error: 'CONVERTIO_KEY not set' });
+  }
+
+  try {
+    const response = await fetch('https://api.convertio.co/convert', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        apikey: convertioKey,
+        input: 'base64',
+        file: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
+        filename: 'test.png',
+        outputformat: 'jpg'
+      })
+    });
+
+    const data = await response.json();
+    console.log('🔍 Fetch response:', { status: response.status, data });
+
+    res.json({
+      success: response.ok,
+      status: response.status,
+      convertio_response: data,
+      method: 'fetch'
+    });
+  } catch (error) {
+    console.error('🚨 Fetch test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      method: 'fetch'
+    });
+  }
 });
 
 // Простой тест Convertio API без загрузки файла
@@ -325,16 +597,66 @@ app.get('/api/test-convertio', async (req, res) => {
 app.get('/api/conversion-status/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const response = await axios.get(`https://api.convertio.co/convert/${id}/status`);
     
-    // Проверяем статус ответа от Convertio API
-    if (response.data.status !== 'ok') {
-      return res.status(400).json({ error: response.data.error || 'Convertio API returned an error' });
+    // CloudConvert использует jobs вместо conversions
+    const response = await axios.get(`https://api.cloudconvert.com/v2/jobs/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${cloudConvertKey}`
+      }
+    });
+    
+    const jobData = response.data.data;
+    console.log(`📊 CloudConvert job status: ${jobData.status} (${id})`);
+    
+    // Преобразуем CloudConvert статусы в формат, понятный фронтенду
+    let status = jobData.status;
+    let downloadUrl = null;
+    let step = 'wait';
+    let fileSize = null;
+    
+    // Определяем step на основе статуса задач
+    if (status === 'finished') {
+      const exportTask = jobData.tasks.find(task => task.operation === 'export/url');
+      if (exportTask && exportTask.result && exportTask.result.files) {
+        downloadUrl = exportTask.result.files[0].url;
+        fileSize = exportTask.result.files[0].size;
+        step = 'finish';
+      }
+    } else if (status === 'error') {
+      const errorTask = jobData.tasks.find(task => task.status === 'error');
+      if (errorTask) {
+        return res.status(400).json({ error: errorTask.message || 'CloudConvert job failed' });
+      }
+    } else if (status === 'processing') {
+      // Проверяем какая задача выполняется
+      const importTask = jobData.tasks.find(task => task.operation === 'import/base64' || task.operation === 'import/upload');
+      const convertTask = jobData.tasks.find(task => task.operation === 'convert');
+      
+      if (importTask && importTask.status === 'processing') {
+        step = 'upload';
+      } else if (convertTask && convertTask.status === 'processing') {
+        step = 'convert';
+      } else {
+        step = 'wait';
+      }
+    } else if (status === 'waiting') {
+      step = 'wait';
     }
     
-    res.json(response.data.data);
+    // Возвращаем в формате совместимом с фронтендом
+    res.json({
+      id: jobData.id,
+      status: status,
+      step: step,
+      step_percent: status === 'finished' ? 100 : (status === 'processing' ? 50 : 10),
+      output: downloadUrl ? {
+        url: downloadUrl,
+        size: fileSize
+      } : null
+    });
+    
   } catch (error) {
-    console.error('Error fetching conversion status:', error.response ? error.response.data : error.message);
+    console.error('Error fetching CloudConvert job status:', error.response ? error.response.data : error.message);
     res.status(500).json({ error: 'Failed to fetch conversion status' });
   }
 });
