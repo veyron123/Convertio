@@ -28,16 +28,40 @@ const upload = multer({
   }
 });
 
-// Health check
+// Health check для Render
 app.get('/api/health', (req, res) => {
-  res.json({
+  // Render ожидает HTTP 200 статус для успешного health check
+  const healthData = {
     status: 'ok',
+    service: 'Convertio File Converter',
     timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
     environment: {
       port: port,
-      nodeEnv: process.env.NODE_ENV || 'not set',
-      cloudConvertKey: cloudConvertKey ? 'SET ✅' : 'MISSING ❌'
+      nodeEnv: process.env.NODE_ENV || 'development',
+      cloudConvertKey: cloudConvertKey ? 'CONFIGURED' : 'MISSING',
+      platform: process.platform,
+      nodeVersion: process.version
+    },
+    render: {
+      healthCheckPath: '/api/health',
+      ready: true
     }
+  };
+
+  // Обязательно отправляем HTTP 200 для Render
+  res.status(200).json(healthData);
+  
+  // Логируем для отладки на Render
+  console.log(`🏥 Health check OK - Uptime: ${healthData.uptime}s`);
+});
+
+// Дополнительный health check endpoint (без /api/ префикса)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    service: 'convertio-ready'
   });
 });
 
