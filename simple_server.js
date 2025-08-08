@@ -14,7 +14,10 @@ const cloudConvertKey = process.env.CLOUDCONVERT_KEY;
 
 console.log('🔍 Starting Simple Server...');
 console.log(`Port: ${port}`);
+console.log(`Node ENV: ${process.env.NODE_ENV}`);
+console.log(`All env vars:`, Object.keys(process.env).filter(key => key.includes('CLOUD')));
 console.log(`CloudConvert Key: ${cloudConvertKey ? 'SET ✅' : 'MISSING ❌'}`);
+console.log(`CloudConvert Key length: ${cloudConvertKey ? cloudConvertKey.length : 0}`);
 
 app.use(cors({ origin: true }));
 app.use(express.static('public'));
