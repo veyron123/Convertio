@@ -358,14 +358,19 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!startResponse.ok) {
         let errorMessage = "Не удалось начать конвертацию";
         try {
-          const errorData = await startResponse.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch (_) {
-          // fallback to plain text
-          const text = await startResponse.text();
-          if (text) {
-            errorMessage = text;
+          // Читаем как текст, затем пытаемся парсить как JSON
+          const responseText = await startResponse.text();
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.error || errorMessage;
+          } catch (jsonError) {
+            // Если не JSON, используем как обычный текст
+            if (responseText) {
+              errorMessage = responseText;
+            }
           }
+        } catch (readError) {
+          console.error('Error reading response:', readError);
         }
   
         // Более понятные сообщения об ошибках
@@ -494,7 +499,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (data.step === 'wait') {
                     progress = Math.min(20, Math.floor(elapsedTime / 1000) * 2); // 2% в секунду до 20%
                 } else if (data.step === 'convert') {
-                    progress = Math.min(85, 20 + Math.floor(elapsedTime / 3000) * 5); // 5% каждые 3 секунды после 20%
+                    progress = Math.min(95, 20 + Math.floor(elapsedTime / 3000) * 5); // 5% каждые 3 секунды после 20%
+                } else if (data.step === 'finish') {
+                    progress = Math.min(99, 90 + Math.floor(elapsedTime / 1000) * 2); // Быстрое завершение
                 }
             }
             
